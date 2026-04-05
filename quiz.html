@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест - Cards2Learn</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <div class="wrapper">
+        <header class="container">
+            <span class="logo">📖 Cards2Learn</span>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Главная</a></li>
+                    <li><a href="cards.html">Карточки</a></li>
+                    <li class="active"><a href="quiz.html">Тест</a></li>
+                    <li><a href="stats.html">Статистика</a></li>
+                    <li><a href="profile.html">Профиль</a></li>
+                    <li class="user-menu">
+                        <span class="user-name" id="userNameDisplay">Гость</span>
+                        <a href="#" id="logoutBtn" class="logout-link">Выйти</a>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+
+        <div class="quiz-page container">
+            <h1 class="page-title">📝 Проверь свои знания!</h1>
+            <p class="page-subtitle">Выбери правильный перевод слова</p>
+
+            <div class="quiz-container">
+                <div class="quiz-header">
+                    <span class="question-counter" id="questionCounter">Вопрос 1 / 10</span>
+                    <span class="score" id="score">Счёт: 0</span>
+                </div>
+                
+                <div class="question-card">
+                    <h2 id="questionWord">Apple</h2>
+                    <div class="options" id="options"></div>
+                </div>
+                
+                <div class="quiz-result" id="quizResult" style="display: none;">
+                    <h2>🎉 Тест завершён!</h2>
+                    <p>Твой результат: <span id="finalScore">0</span> / <span id="totalQuestions">10</span></p>
+                    <div class="result-message" id="resultMessage"></div>
+                    <button class="btn" onclick="restartQuiz()">🔄 Пройти заново</button>
+                    <button class="btn" onclick="location.href='cards.html'">📚 Учить слова</button>
+                </div>
+            </div>
+
+            <div class="back-home">
+                <button class="btn" onclick="location.href='index.html'">← На главную</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        if (!Auth.isLoggedIn()) {
+            window.location.href = 'login.html';
+        }
+        
+        document.getElementById('userNameDisplay').textContent = Auth.getCurrentUser().username;
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            Auth.logout();
+        });
+        
+        let words = [
+            { eng: "Apple", rus: "Яблоко" },
+            { eng: "Sun", rus: "Солнце" },
+            { eng: "Happy", rus: "Счастливый" },
+            { eng: "Fast", rus: "Быстрый" },
+            { eng: "Water", rus: "Вода" },
+            { eng: "Friend", rus: "Друг" },
+            { eng: "Big", rus: "Большой" },
+            { eng: "Beautiful", rus: "Красивый" },
+            { eng: "Dog", rus: "Собака" },
+            { eng: "Cat", rus: "Кошка" }
+        ];
+        
+        let currentQuestions = [];
+        let currentIndex = 0;
+        let score = 0;
+        
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+        
+        function initQuiz() {
+            currentQuestions = shuffleArray([...words]).slice(0, 10);
+            currentIndex = 0;
+            score = 0;
+            document.getElementById('score').textContent = `Счёт: ${score}`;
+            document.getElementById('quizResult').style.display = 'none';
+            document.querySelector('.quiz-container').style.display = 'block';
+            loadQuestion();
+        }
+        
+        function loadQuestion() {
+            if (currentIndex >= currentQuestions.length) {
+                endQuiz();
+                return;
+            }
+            
+            const word = currentQuestions[currentIndex];
+            document.getElementById('questionWord').textContent = word.eng;
+            document.getElementById('questionCounter').textContent = `Вопрос ${currentIndex + 1} / ${currentQuestions.length}`;
+            
+            const correct = word.rus;
+            let otherWords = words.filter(w => w.rus !== correct).map(w => w.rus);
+            otherWords = shuffleArray([...new Set(otherWords)]).slice(0, 3);
+            const options = shuffleArray([correct, ...otherWords]);
+            
+            const optionsContainer = document.getElementById('options');
+            optionsContainer.innerHTML = '';
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option';
+                btn.textContent = opt;
+                btn.onclick = () => checkAnswer(opt, correct);
+                optionsContainer.appendChild(btn);
+            });
+        }
+        
+        function checkAnswer(selected, correct) {
+            const buttons = document.querySelectorAll('.option');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                if (btn.textContent === correct) {
+                    btn.style.background = '#4CAF50';
+                    btn.style.color = 'white';
+                }
+                if (btn.textContent === selected && selected !== correct) {
+                    btn.style.background = '#f44336';
+                    btn.style.color = 'white';
+                }
+            });
+            
+            if (selected === correct) {
+                score++;
+                document.getElementById('score').textContent = `Счёт: ${score}`;
+                showToast("✅ Правильно!", "success");
+            } else {
+                showToast(`❌ Неправильно! Правильно: ${correct}`, "error");
+            }
+            
+            setTimeout(() => {
+                currentIndex++;
+                loadQuestion();
+            }, 1500);
+        }
+        
+        function endQuiz() {
+            document.querySelector('.quiz-container').style.display = 'none';
+            document.getElementById('quizResult').style.display = 'block';
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('totalQuestions').textContent = currentQuestions.length;
+            
+            const percent = Math.round((score / currentQuestions.length) * 100);
+            let message = "";
+            if (percent === 100) message = "🎉 Идеально! Ты гений! 🎉";
+            else if (percent >= 80) message = "🌟 Отлично! Ты хорошо знаешь слова! 🌟";
+            else if (percent >= 60) message = "👍 Неплохо! Но есть куда расти!";
+            else message = "📚 Нужно ещё немного позаниматься! У тебя всё получится!";
+            document.getElementById('resultMessage').textContent = message;
+            
+            if (score > (parseInt(localStorage.getItem('cards2learn_bestScore')) || 0)) {
+                localStorage.setItem('cards2learn_bestScore', score);
+                Auth.saveCurrentUserData();
+                showToast("🏆 Новый рекорд!", "success");
+            }
+        }
+        
+        function restartQuiz() {
+            initQuiz();
+        }
+        
+        function showToast(msg, type) {
+            let toast = document.getElementById('quiz-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'quiz-toast';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = msg;
+            toast.className = `toast ${type}`;
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 1500);
+        }
+        
+        initQuiz();
+    </script>
+</body>
+</html>

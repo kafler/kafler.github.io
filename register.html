@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация - Cards2Learn</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-logo">📖 Cards2Learn</div>
+            <h1>Создание аккаунта</h1>
+            <p class="auth-subtitle">Зарегистрируйся и начни учить слова</p>
+            
+            <div id="authMessage" class="auth-message" style="display: none;"></div>
+            
+            <form id="registerForm">
+                <div class="input-group">
+                    <label>👤 Логин (только латиница и цифры)</label>
+                    <input type="text" id="regUsername" placeholder="Логин 3-20 символов" required autocomplete="off">
+                </div>
+                
+                <div class="input-group">
+                    <label>📧 Email (необязательно)</label>
+                    <input type="email" id="regEmail" placeholder="your@email.com" autocomplete="off">
+                </div>
+                
+                <div class="input-group">
+                    <label>🔒 Пароль</label>
+                    <input type="password" id="regPassword" placeholder="Минимум 4 символа" required>
+                </div>
+                
+                <div class="input-group">
+                    <label>🔒 Повторите пароль</label>
+                    <input type="password" id="regPasswordConfirm" placeholder="Повторите пароль" required>
+                </div>
+                
+                <button type="submit" class="auth-btn">Зарегистрироваться</button>
+            </form>
+            
+            <div class="auth-links">
+                <a href="login.html">Уже есть аккаунт? Войти</a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/auth.js"></script>
+    <script>
+        function showMessage(msg, type) {
+            const msgDiv = document.getElementById('authMessage');
+            msgDiv.textContent = msg;
+            msgDiv.className = `auth-message ${type}`;
+            msgDiv.style.display = 'block';
+            setTimeout(() => {
+                msgDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('regUsername').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const passwordConfirm = document.getElementById('regPasswordConfirm').value;
+            
+            if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+                showMessage('❌ Логин должен содержать 3-20 символов (латиница, цифры, _)', 'error');
+                return;
+            }
+            
+            if (password !== passwordConfirm) {
+                showMessage('❌ Пароли не совпадают!', 'error');
+                return;
+            }
+            
+            if (password.length < 4) {
+                showMessage('❌ Пароль должен быть не менее 4 символов!', 'error');
+                return;
+            }
+            
+            const result = Auth.register(username, password, email);
+            if (result.success) {
+                showMessage('✅ Регистрация успешна! Вход выполнен...', 'success');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
+            } else {
+                showMessage(result.error, 'error');
+            }
+        });
+    </script>
+</body>
+</html>

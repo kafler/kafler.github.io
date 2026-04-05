@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход - Cards2Learn</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-logo">📖 Cards2Learn</div>
+            <h1>Вход в аккаунт</h1>
+            <p class="auth-subtitle">Войди, чтобы продолжить обучение</p>
+            
+            <div id="authMessage" class="auth-message" style="display: none;"></div>
+            
+            <form id="loginForm">
+                <div class="input-group">
+                    <label>👤 Логин</label>
+                    <input type="text" id="loginUsername" placeholder="Введите логин" required autocomplete="off">
+                </div>
+                
+                <div class="input-group">
+                    <label>🔒 Пароль</label>
+                    <input type="password" id="loginPassword" placeholder="Введите пароль" required>
+                </div>
+                
+                <button type="submit" class="auth-btn">Войти</button>
+            </form>
+            
+            <div class="auth-links">
+                <a href="register.html">Нет аккаунта? Зарегистрироваться</a>
+            </div>
+            
+            <div class="demo-login">
+                <p>📱 Демо-аккаунты:</p>
+                <button class="demo-btn" data-login="student" data-pass="123">Ученик (student/123)</button>
+                <button class="demo-btn" data-login="teacher" data-pass="123">Учитель (teacher/123)</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/auth.js"></script>
+    <script>
+        function showMessage(msg, type) {
+            const msgDiv = document.getElementById('authMessage');
+            msgDiv.textContent = msg;
+            msgDiv.className = `auth-message ${type}`;
+            msgDiv.style.display = 'block';
+            setTimeout(() => {
+                msgDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            const result = Auth.login(username, password);
+            if (result.success) {
+                showMessage('✅ Вход выполнен! Перенаправление...', 'success');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            } else {
+                showMessage(result.error, 'error');
+            }
+        });
+        
+        document.querySelectorAll('.demo-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('loginUsername').value = this.dataset.login;
+                document.getElementById('loginPassword').value = this.dataset.pass;
+                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+            });
+        });
+    </script>
+</body>
+</html>

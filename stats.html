@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Статистика - Cards2Learn</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <div class="wrapper">
+        <header class="container">
+            <span class="logo">📖 Cards2Learn</span>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Главная</a></li>
+                    <li><a href="cards.html">Карточки</a></li>
+                    <li><a href="quiz.html">Тест</a></li>
+                    <li class="active"><a href="stats.html">Статистика</a></li>
+                    <li><a href="profile.html">Профиль</a></li>
+                    <li class="user-menu">
+                        <span class="user-name" id="userNameDisplay">Гость</span>
+                        <a href="#" id="logoutBtn" class="logout-link">Выйти</a>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+
+        <div class="stats-page container">
+            <h1 class="page-title">📊 Моя статистика</h1>
+            <p class="page-subtitle">Отслеживай свой прогресс в изучении английского</p>
+
+            <div class="stats-grid">
+                <div class="stat-card-big">
+                    <div class="stat-icon">🎴</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Всего слов в базе</span>
+                        <span class="stat-number" id="totalWords">0</span>
+                    </div>
+                </div>
+                <div class="stat-card-big">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Изучено слов</span>
+                        <span class="stat-number" id="knownWords">0</span>
+                    </div>
+                </div>
+                <div class="stat-card-big">
+                    <div class="stat-icon">🎯</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Прогресс</span>
+                        <span class="stat-number" id="progressPercent">0%</span>
+                    </div>
+                </div>
+                <div class="stat-card-big">
+                    <div class="stat-icon">🏆</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Лучший результат в тесте</span>
+                        <span class="stat-number" id="bestScore">0</span>
+                    </div>
+                </div>
+                <div class="stat-card-big">
+                    <div class="stat-icon">📝</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Своих слов добавлено</span>
+                        <span class="stat-number" id="myWordsCount">0</span>
+                    </div>
+                </div>
+                <div class="stat-card-big">
+                    <div class="stat-icon">🔥</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Сессий обучения</span>
+                        <span class="stat-number" id="sessions">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="motivation">
+                <h3>🌟 Твоя мотивация сегодня:</h3>
+                <p id="motivationMessage">Загружаем...</p>
+            </div>
+
+            <div class="back-home">
+                <button class="btn" onclick="location.href='index.html'">← На главную</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        if (!Auth.isLoggedIn()) {
+            window.location.href = 'login.html';
+        }
+        
+        document.getElementById('userNameDisplay').textContent = Auth.getCurrentUser().username;
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            Auth.logout();
+        });
+        
+        function loadStats() {
+            const baseWords = ["Apple", "Sun", "Happy", "Fast", "Water", "Friend", "Big", "Beautiful"];
+            const savedKnown = localStorage.getItem('cards2learn_known');
+            let knownCount = 0;
+            if (savedKnown) {
+                knownCount = JSON.parse(savedKnown).filter(k => k === true).length;
+            }
+            
+            const savedMyWords = localStorage.getItem('cards2learn_mywords');
+            let myWordsCount = 0;
+            if (savedMyWords) {
+                myWordsCount = JSON.parse(savedMyWords).length;
+            }
+            
+            const totalWords = baseWords.length + myWordsCount;
+            const progress = totalWords > 0 ? Math.round((knownCount / totalWords) * 100) : 0;
+            const bestScore = localStorage.getItem('cards2learn_bestScore') || 0;
+            const sessions = localStorage.getItem('cards2learn_sessions') || 1;
+            
+            document.getElementById('totalWords').textContent = totalWords;
+            document.getElementById('knownWords').textContent = knownCount;
+            document.getElementById('progressPercent').textContent = progress + '%';
+            document.getElementById('bestScore').textContent = bestScore + ' / 10';
+            document.getElementById('myWordsCount').textContent = myWordsCount;
+            document.getElementById('sessions').textContent = sessions;
+            
+            let message = "";
+            if (progress === 100) message = "🎉 Ты выучил все слова! Ты настоящий чемпион! Продолжай добавлять новые! 🎉";
+            else if (progress >= 75) message = "🔥 Ты почти у цели! Осталось совсем немного! Продолжай в том же духе! 🔥";
+            else if (progress >= 50) message = "💪 Отлично! Половина пути пройдена! Так держать! 💪";
+            else if (progress >= 25) message = "👍 Хороший старт! У тебя всё получится, главное — не останавливайся!";
+            else message = "🌟 Первые шаги сделаны! Каждый день — это маленькая победа. Добавь свои первые слова и начни учить!";
+            
+            document.getElementById('motivationMessage').textContent = message;
+        }
+        
+        loadStats();
+    </script>
+</body>
+</html>

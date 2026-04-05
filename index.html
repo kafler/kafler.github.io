@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cards2Learn - Главная</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <div class="wrapper">
+        <header class="container">
+            <span class="logo">📖 Cards2Learn</span>
+            <nav>
+                <ul>
+                    <li class="active"><a href="index.html">Главная</a></li>
+                    <li><a href="cards.html">Карточки</a></li>
+                    <li><a href="quiz.html">Тест</a></li>
+                    <li><a href="stats.html">Статистика</a></li>
+                    <li><a href="profile.html">Профиль</a></li>
+                    <li class="user-menu">
+                        <span class="user-name" id="userNameDisplay">Гость</span>
+                        <a href="#" id="logoutBtn" class="logout-link">Выйти</a>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+
+        <div class="hero container">
+            <div class="hero-info">
+                <h2>✨ Добро пожаловать, <span id="welcomeUser">друг</span>!</h2>
+                <h1>Учи английские слова с удовольствием!</h1>
+                <p>Создавай свои карточки, тренируй память и проверяй знания в интерактивных тестах. Твой прогресс сохраняется в аккаунте.</p>
+                <button class="btn" onclick="location.href='cards.html'">Начать учиться →</button>
+            </div>
+            <div class="hero-stats">
+                <div class="stat-card">
+                    <span class="stat-number">50+</span>
+                    <span class="stat-label">слов в день</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">100%</span>
+                    <span class="stat-label">бесплатно</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">📱</span>
+                    <span class="stat-label">работает везде</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="features container">
+            <h2>Что ты получишь?</h2>
+            <div class="features-grid">
+                <div class="feature">
+                    <div class="feature-icon">🎴</div>
+                    <h3>Умные карточки</h3>
+                    <p>Переворачивай карточки и запоминай перевод</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">✅</div>
+                    <h3>Тестирование</h3>
+                    <p>Проверяй свои знания в интерактивном тесте</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">➕</div>
+                    <h3>Свои слова</h3>
+                    <p>Добавляй любые слова, которые хочешь выучить</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">📊</div>
+                    <h3>Статистика</h3>
+                    <p>Отслеживай свой прогресс</p>
+                </div>
+            </div>
+        </div>
+
+        <footer class="container">
+            <p>© 2026 Cards2Learn | Безопасное обучение | Все данные сохраняются в твоём аккаунте</p>
+        </footer>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        if (!Auth.isLoggedIn()) {
+            window.location.href = 'login.html';
+        }
+        
+        const user = Auth.getCurrentUser();
+        document.getElementById('welcomeUser').textContent = user.username;
+        document.getElementById('userNameDisplay').textContent = user.username;
+        
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            Auth.logout();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Карточки - Cards2Learn</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <div class="wrapper">
+        <header class="container">
+            <span class="logo">📖 Cards2Learn</span>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Главная</a></li>
+                    <li class="active"><a href="cards.html">Карточки</a></li>
+                    <li><a href="quiz.html">Тест</a></li>
+                    <li><a href="stats.html">Статистика</a></li>
+                    <li><a href="profile.html">Профиль</a></li>
+                    <li class="user-menu">
+                        <span class="user-name" id="userNameDisplay">Гость</span>
+                        <a href="#" id="logoutBtn" class="logout-link">Выйти</a>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+
+        <div class="cards-page container">
+            <h1 class="page-title">🎴 Мои карточки</h1>
+            <p class="page-subtitle">Нажми на карточку, чтобы увидеть перевод | Листай стрелками | Добавляй свои слова</p>
+
+            <div class="categories">
+                <button class="cat-btn active" data-cat="all">Все слова</button>
+                <button class="cat-btn" data-cat="basic">Базовые</button>
+                <button class="cat-btn" data-cat="my">Мои слова</button>
+            </div>
+
+            <div class="single-card-container">
+                <div class="flashcard" id="flashcard">
+                    <div class="card-inner">
+                        <div class="card-front">
+                            <h3 id="word-eng">Apple</h3>
+                            <span class="hint">🍎 нажми</span>
+                        </div>
+                        <div class="card-back">
+                            <h3 id="word-rus">Яблоко</h3>
+                            <span class="hint">🍏</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="navigation">
+                <button class="nav-btn" id="prevBtn">◀ Предыдущее</button>
+                <span class="counter" id="counter">1 / 8</span>
+                <button class="nav-btn" id="nextBtn">Следующее ▶</button>
+            </div>
+
+            <div class="controls">
+                <button class="control-btn" id="knownBtn">✅ Знаю</button>
+                <button class="control-btn" id="unknownBtn">❌ Не знаю</button>
+                <button class="control-btn delete-btn" id="deleteBtn">🗑️ Удалить</button>
+                <button class="control-btn" id="shuffleBtn">🔄 Перемешать</button>
+            </div>
+
+            <div class="progress-area">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p id="progressText">Изучено: 0 / 0 слов (0%)</p>
+            </div>
+
+            <div class="add-card-form">
+                <h3>➕ Добавить новое слово</h3>
+                <div class="form-row">
+                    <input type="text" id="newEng" placeholder="Слово на английском" autocomplete="off">
+                    <input type="text" id="newRus" placeholder="Перевод" autocomplete="off">
+                    <input type="text" id="newEmoji" placeholder="Эмодзи (🐕)" autocomplete="off">
+                    <button class="add-btn" id="addBtn">➕ Добавить</button>
+                </div>
+            </div>
+
+            <div class="tips">
+                <h4>💡 Совет для быстрого запоминания:</h4>
+                <p>Повторяй слова вслух! Исследования показывают, что проговаривание улучшает запоминание на 50%.</p>
+            </div>
+
+            <div class="back-home">
+                <button class="btn" onclick="location.href='index.html'">← На главную</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        if (!Auth.isLoggedIn()) {
+            window.location.href = 'login.html';
+        }
+        
+        document.getElementById('userNameDisplay').textContent = Auth.getCurrentUser().username;
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            Auth.logout();
+        });
+        
+        // Данные пользователя
+        let baseWords = [
+            { eng: "Apple", rus: "Яблоко", emoji: "🍎", category: "basic", known: false },
+            { eng: "Sun", rus: "Солнце", emoji: "☀️", category: "basic", known: false },
+            { eng: "Happy", rus: "Счастливый", emoji: "😊", category: "basic", known: false },
+            { eng: "Fast", rus: "Быстрый", emoji: "⚡", category: "basic", known: false },
+            { eng: "Water", rus: "Вода", emoji: "💧", category: "basic", known: false },
+            { eng: "Friend", rus: "Друг", emoji: "👫", category: "basic", known: false },
+            { eng: "Big", rus: "Большой", emoji: "🐘", category: "basic", known: false },
+            { eng: "Beautiful", rus: "Красивый", emoji: "🌸", category: "basic", known: false }
+        ];
+        
+        let myWords = [];
+        let currentCategory = "all";
+        let currentFilteredWords = [];
+        let currentIndex = 0;
+        let isFlipped = false;
+        
+        function loadData() {
+            const savedKnown = localStorage.getItem('cards2learn_known');
+            if (savedKnown) {
+                try {
+                    const knownData = JSON.parse(savedKnown);
+                    baseWords.forEach((w, i) => {
+                        if (knownData[i] !== undefined) w.known = knownData[i];
+                    });
+                } catch(e) {}
+            }
+            
+            const savedMyWords = localStorage.getItem('cards2learn_mywords');
+            if (savedMyWords) {
+                try {
+                    myWords = JSON.parse(savedMyWords);
+                } catch(e) {}
+            }
+            
+            updateFilteredWords();
+        }
+        
+        function saveData() {
+            const knownData = baseWords.map(w => w.known);
+            localStorage.setItem('cards2learn_known', JSON.stringify(knownData));
+            localStorage.setItem('cards2learn_mywords', JSON.stringify(myWords));
+            Auth.saveCurrentUserData();
+        }
+        
+        function updateFilteredWords() {
+            if (currentCategory === "all") {
+                currentFilteredWords = [...baseWords, ...myWords];
+            } else if (currentCategory === "basic") {
+                currentFilteredWords = [...baseWords];
+            } else {
+                currentFilteredWords = [...myWords];
+            }
+            
+            if (currentIndex >= currentFilteredWords.length) {
+                currentIndex = Math.max(0, currentFilteredWords.length - 1);
+            }
+            if (currentFilteredWords.length === 0) currentIndex = 0;
+            updateCard();
+            updateProgress();
+        }
+        
+        function updateCard() {
+            if (currentFilteredWords.length === 0) {
+                document.getElementById('word-eng').textContent = "Нет слов";
+                document.getElementById('word-rus').textContent = "Добавьте слова в форму ниже";
+                document.getElementById('counter').textContent = `0 / 0`;
+                return;
+            }
+            
+            const word = currentFilteredWords[currentIndex];
+            document.getElementById('word-eng').textContent = word.eng;
+            document.getElementById('word-rus').textContent = word.rus;
+            
+            const emoji = word.emoji || "📖";
+            document.querySelector('#flashcard .card-front .hint').textContent = emoji + " нажми";
+            document.querySelector('#flashcard .card-back .hint').textContent = emoji;
+            
+            if (isFlipped) {
+                document.getElementById('flashcard').classList.remove('flipped');
+                isFlipped = false;
+            }
+            
+            document.getElementById('counter').textContent = `${currentIndex + 1} / ${currentFilteredWords.length}`;
+        }
+        
+        function updateProgress() {
+            const knownCount = baseWords.filter(w => w.known).length;
+            const total = baseWords.length;
+            const percent = total > 0 ? Math.round((knownCount / total) * 100) : 0;
+            
+            document.getElementById('progressFill').style.width = percent + '%';
+            document.getElementById('progressText').textContent = `Изучено: ${knownCount} / ${total} слов (${percent}%)`;
+        }
+        
+        function markAsKnown() {
+            if (currentFilteredWords.length === 0) return;
+            const word = currentFilteredWords[currentIndex];
+            if (word.category === "basic") {
+                const baseIndex = baseWords.findIndex(w => w.eng === word.eng);
+                if (baseIndex !== -1 && !baseWords[baseIndex].known) {
+                    baseWords[baseIndex].known = true;
+                    saveData();
+                    updateProgress();
+                    showToast("✅ Отлично! Слово изучено!", "success");
+                }
+            }
+            nextWord();
+        }
+        
+        function markAsUnknown() {
+            if (currentFilteredWords.length === 0) return;
+            const word = currentFilteredWords[currentIndex];
+            if (word.category === "basic") {
+                const baseIndex = baseWords.findIndex(w => w.eng === word.eng);
+                if (baseIndex !== -1) {
+                    baseWords[baseIndex].known = false;
+                    saveData();
+                    updateProgress();
+                    showToast("📚 Продолжай учить!", "info");
+                }
+            }
+            nextWord();
+        }
+        
+        function shuffleWords() {
+            for (let i = currentFilteredWords.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [currentFilteredWords[i], currentFilteredWords[j]] = [currentFilteredWords[j], currentFilteredWords[i]];
+            }
+            currentIndex = 0;
+            updateCard();
+            showToast("🃏 Слова перемешаны!", "info");
+        }
+        
+        function deleteCurrentWord() {
+            if (currentFilteredWords.length === 0) return;
+            const word = currentFilteredWords[currentIndex];
+            if (word.category === "my") {
+                const myIndex = myWords.findIndex(w => w.eng === word.eng && w.rus === word.rus);
+                if (myIndex !== -1) {
+                    if (confirm(`Удалить слово "${word.eng}"?`)) {
+                        myWords.splice(myIndex, 1);
+                        saveData();
+                        updateFilteredWords();
+                        showToast("🗑️ Слово удалено!", "success");
+                    }
+                }
+            } else {
+                showToast("Базовые слова нельзя удалить, их можно выучить!", "info");
+            }
+        }
+        
+        function addWord() {
+            let eng = document.getElementById('newEng').value.trim();
+            let rus = document.getElementById('newRus').value.trim();
+            let emoji = document.getElementById('newEmoji').value.trim();
+            
+            if (eng === "" || rus === "") {
+                showToast("❌ Заполни оба поля!", "error");
+                return;
+            }
+            
+            eng = eng.charAt(0).toUpperCase() + eng.slice(1).toLowerCase();
+            rus = rus.charAt(0).toUpperCase() + rus.slice(1).toLowerCase();
+            emoji = emoji || "📖";
+            
+            myWords.push({ eng: eng, rus: rus, emoji: emoji, category: "my", known: false });
+            saveData();
+            
+            document.getElementById('newEng').value = "";
+            document.getElementById('newRus').value = "";
+            document.getElementById('newEmoji').value = "";
+            
+            updateFilteredWords();
+            currentIndex = currentFilteredWords.length - 1;
+            updateCard();
+            showToast(`✅ Слово "${eng}" добавлено!`, "success");
+        }
+        
+        function setCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.cat === cat);
+            });
+            updateFilteredWords();
+        }
+        
+        function prevWord() {
+            if (currentFilteredWords.length === 0) return;
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateCard();
+            } else {
+                document.getElementById('flashcard').style.animation = 'shake 0.3s ease';
+                setTimeout(() => document.getElementById('flashcard').style.animation = '', 300);
+            }
+        }
+        
+        function nextWord() {
+            if (currentFilteredWords.length === 0) return;
+            if (currentIndex < currentFilteredWords.length - 1) {
+                currentIndex++;
+                updateCard();
+            } else {
+                document.getElementById('flashcard').style.animation = 'shake 0.3s ease';
+                setTimeout(() => document.getElementById('flashcard').style.animation = '', 300);
+            }
+        }
+        
+        function showToast(msg, type) {
+            let toast = document.getElementById('toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toast';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = msg;
+            toast.className = `toast ${type}`;
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 2000);
+        }
+        
+        document.getElementById('flashcard').addEventListener('click', () => {
+            if (currentFilteredWords.length > 0) {
+                document.getElementById('flashcard').classList.toggle('flipped');
+                isFlipped = document.getElementById('flashcard').classList.contains('flipped');
+            }
+        });
+        
+        document.getElementById('prevBtn').addEventListener('click', prevWord);
+        document.getElementById('nextBtn').addEventListener('click', nextWord);
+        document.getElementById('knownBtn').addEventListener('click', markAsKnown);
+        document.getElementById('unknownBtn').addEventListener('click', markAsUnknown);
+        document.getElementById('deleteBtn').addEventListener('click', deleteCurrentWord);
+        document.getElementById('shuffleBtn').addEventListener('click', shuffleWords);
+        document.getElementById('addBtn').addEventListener('click', addWord);
+        
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+            btn.addEventListener('click', () => setCategory(btn.dataset.cat));
+        });
+        
+        document.getElementById('newEng').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addWord();
+        });
+        
+        loadData();
+    </script>
+</body>
+</html>

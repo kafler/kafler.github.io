@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль - Cards2Learn</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <div class="wrapper">
+        <header class="container">
+            <span class="logo">📖 Cards2Learn</span>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Главная</a></li>
+                    <li><a href="cards.html">Карточки</a></li>
+                    <li><a href="quiz.html">Тест</a></li>
+                    <li><a href="stats.html">Статистика</a></li>
+                    <li class="active"><a href="profile.html">Профиль</a></li>
+                    <li class="user-menu">
+                        <span class="user-name" id="userNameDisplay">Гость</span>
+                        <a href="#" id="logoutBtn" class="logout-link">Выйти</a>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+
+        <div class="profile-page container">
+            <h1 class="page-title">👤 Мой профиль</h1>
+            <p class="page-subtitle">Настройки аккаунта и данные</p>
+
+            <div class="profile-card">
+                <div class="profile-avatar">
+                    <span id="avatarEmoji">😊</span>
+                </div>
+                <div class="profile-info">
+                    <p><strong>👤 Логин:</strong> <span id="profileUsername"></span></p>
+                    <p><strong>📧 Email:</strong> <span id="profileEmail"></span></p>
+                    <p><strong>📅 Дата регистрации:</strong> <span id="profileDate"></span></p>
+                </div>
+            </div>
+
+            <div class="profile-section">
+                <h3>🔐 Сменить пароль</h3>
+                <div class="form-group">
+                    <input type="password" id="oldPassword" placeholder="Старый пароль">
+                </div>
+                <div class="form-group">
+                    <input type="password" id="newPassword" placeholder="Новый пароль">
+                </div>
+                <div class="form-group">
+                    <input type="password" id="confirmNewPassword" placeholder="Подтвердите новый пароль">
+                </div>
+                <button class="btn" id="changePasswordBtn">Сменить пароль</button>
+            </div>
+
+            <div class="profile-section">
+                <h3>💾 Резервное копирование</h3>
+                <button class="btn" id="exportBtn">📤 Экспорт данных</button>
+                <label class="btn import-label" style="display: inline-block; margin-left: 10px;">
+                    📥 Импорт данных
+                    <input type="file" id="importFile" accept=".json" style="display: none;">
+                </label>
+            </div>
+
+            <div class="back-home">
+                <button class="btn" onclick="location.href='index.html'">← На главную</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        if (!Auth.isLoggedIn()) {
+            window.location.href = 'login.html';
+        }
+        
+        const user = Auth.getCurrentUser();
+        document.getElementById('userNameDisplay').textContent = user.username;
+        document.getElementById('profileUsername').textContent = user.username;
+        document.getElementById('profileEmail').textContent = user.email || "Не указан";
+        document.getElementById('profileDate').textContent = user.loginTime ? new Date(user.loginTime).toLocaleDateString() : "—";
+        
+        const avatarEmojis = ['😊', '😎', '🧠', '📚', '🎓', '🌟', '🔥', '💪'];
+        document.getElementById('avatarEmoji').textContent = avatarEmojis[user.username.length % avatarEmojis.length];
+        
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            Auth.logout();
+        });
+        
+        document.getElementById('changePasswordBtn').addEventListener('click', () => {
+            const oldPass = document.getElementById('oldPassword').value;
+            const newPass = document.getElementById('newPassword').value;
+            const confirmPass = document.getElementById('confirmNewPassword').value;
+            
+            if (!oldPass || !newPass) {
+                alert("❌ Заполните все поля!");
+                return;
+            }
+            if (newPass !== confirmPass) {
+                alert("❌ Новые пароли не совпадают!");
+                return;
+            }
+            if (newPass.length < 4) {
+                alert("❌ Пароль должен быть не менее 4 символов!");
+                return;
+            }
+            
+            const result = Auth.changePassword(oldPass, newPass);
+            if (result.success) {
+                alert("✅ Пароль успешно изменён!");
+                document.getElementById('oldPassword').value = "";
+                document.getElementById('newPassword').value = "";
+                document.getElementById('confirmNewPassword').value = "";
+            } else {
+                alert(result.error);
+            }
+        });
+        
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const data = Auth.exportData();
+            if (data) {
+                const blob = new Blob([data], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `cards2learn_backup_${user.username}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                alert("💾 Данные экспортированы!");
+            }
+        });
+        
+        document.getElementById('importFile').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const result = Auth.importData(event.target.result);
+                    if (result.success) {
+                        alert("✅ Данные импортированы! Страница будет обновлена.");
+                        location.reload();
+                    } else {
+                        alert(result.error);
+                    }
+                };
+                reader.readAsText(file);
+            }
+            e.target.value = '';
+        });
+        
+        document.querySelector('.import-label').addEventListener('click', () => {
+            document.getElementById('importFile').click();
+        });
+    </script>
+</body>
+</html>
